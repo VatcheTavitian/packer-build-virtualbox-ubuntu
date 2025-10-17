@@ -1,0 +1,53 @@
+#cloud-config
+autoinstall:
+  version: 1
+  early-commands:
+    - sudo systemctl stop ssh
+  locale: en_US
+  refresh-installer:
+    update: yes
+  keyboard:
+    layout: us
+  network:
+    version: 2
+    ethernets:
+      enp38s0:
+        dhcp4: true
+  storage:
+    layout:
+      name: lvm
+  ssh:
+    allow-pw: true
+    install-server: yes
+  user-data:
+    disable_root: false
+    users:
+      -
+        name: ubuntu
+        passwd: $2a$10$ZeBn/VIT9u1c1svv4iFRru1XaYVbfaH8nMQtB/oCat6oFodrL./d6
+        groups: [ adm, cdrom, dip, plugdev, lxd, sudo ]
+        lock-passwd: false
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        shell: /bin/bash
+  late-commands:
+    - curtin in-target -- sudo sh -c "echo 'sed -i \"s/enp38s0/enp0s3/g\" /etc/netplan/50-cloud-init.yaml; ip link set enp0s3 up; netplan apply; rm /etc/script.sh;' | tee -a /etc/script.sh > /dev/null"
+    - curtin in-target -- sudo chmod +x /etc/script.sh
+    - curtin in-target -- sudo sh -c 'echo "@reboot root /bin/bash /etc/script.sh" | sudo tee -a /etc/crontab > /dev/null'
+
+    # Above late commands fix network interface name from enp38s0 to enp0s3 in VirtualBox VMs
+    # and set it up to run at every boot via cron job
+    # Below late commands install NetworkManager and configure netplan to use it but it needs to be fixed and tested
+    # - [curtin, in-target, --, apt-get, update]
+    # - [curtin, in-target, --, apt-get, install, -y, network-manager]
+    # -  curtin in-target -- rm -f /target/etc/netplan/00-installer-config*yaml
+    # - [curtin, in-target, --, sh, -c, "echo network:\\n  version: 2\\n  renderer: NetworkManager | tee /etc/netplan/01-netcfg.yaml > /dev/null"]
+
+
+
+
+    
+
+
+
+
+
